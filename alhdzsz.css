@@ -1,0 +1,64 @@
+/* styles.css */
+
+h1, h2, h3 {
+  color: #0e314e !important;
+  font-family: "Garamond" !important;
+}
+
+strong, b {
+  color: #0e314e;
+}
+
+.reveal a {
+  color: #2d8cff !important;
+  text-decoration: underline;
+}
+
+.wrap-equation {
+  font-size: 60% !important;
+  background-color: #E8F3FB !important;
+  padding: .5em;
+  border-radius: 12px;
+  white-space: nowrap !important;
+  overflow-x: auto !important;
+}
+
+.reveal table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  font-size: 0.42em;
+  line-height: 1.08;
+  display: block;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 430px;
+  border: 1px solid #d8e2ec;
+  border-radius: 12px;
+  background: #fcfdff;
+}
+
+.reveal table th,
+.reveal table td {
+  border-bottom: 1px solid #e8eef5;
+  padding: 0.2em 0.32em;
+  white-space: nowrap;
+}
+
+.reveal table th {
+  color: #0e314e;
+  font-weight: 700;
+  background: #f4f8fc;
+  position: sticky;
+  top: 0;
+}
+
+.reveal table tr:last-child td {
+  border-bottom: 0;
+}
+
+.table-note {
+  font-size: 0.45em;
+  color: #3b4f61;
+  margin-top: 0.2rem;
+}
