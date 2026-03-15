@@ -7,11 +7,11 @@ institute:
   - "[Vilnius University](https://www.tspmi.vu.lt/en/)"
 date: "2026-04-23"
 abstract: >
-  Simple regression tables using the `easytable` R package.
+  Example materials for an undergraduate-level course on regression tables using the `easytable` R package.
 format:
   revealjs:
     theme: simple
-    logo: logo_pres.png
+    logo: img/logo_pres.png
     css: alhdzsz.css
     transition: none
 bibliography: references.bib
@@ -108,7 +108,11 @@ render_kbl <- function(df,
 
 ## Datos de trabajo: `mtcars`
 
-> `mtcars` proviene de la revista Motor Trend (EE. UU., 1974) y contiene información sobre el consumo de combustible y diez características de diseño y desempeño de 32 automóviles de los modelos 1973–74. Tiene 32 observaciones y 11 variables numéricas, ampliamente utilizado en análisis estadístico y ejemplos en R.
+> `mtcars` proviene de la revista Motor Trend (EE. UU., 1974) y contiene
+> información sobre el consumo de combustible y diez características de
+> diseño y desempeño de 32 automóviles de los modelos 1973–74. Tiene 32
+> observaciones y 11 variables numéricas, ampliamente utilizado en
+> análisis estadístico y ejemplos en R.
 
 <br>
 
@@ -121,13 +125,11 @@ render_kbl <- function(df,
 data(mtcars)
 ```
 
-
 ## Variables `mtcars`
 
 <br>
 
-<div style="font-size:50pt;">
-
+::: {style="font-size:50pt;"}
 | Variable | Descripción                              |
 |----------|------------------------------------------|
 | mpg      | Millas por galón (EE. UU.)               |
@@ -141,8 +143,7 @@ data(mtcars)
 | am       | Transmisión (0 = automática, 1 = manual) |
 | gear     | Número de marchas hacia adelante         |
 | carb     | Número de carburadores                   |
-
-</div>
+:::
 
 ## `mtcars`
 
@@ -181,7 +182,6 @@ m1 <- lm(mpg ~ wt,
 summary(m1)
 ```
 
-
 ## ¿Qué son los residuales?
 
 El residual es la diferencia entre el valor observado y el valor
@@ -194,7 +194,6 @@ $$
 -   Residual positivo: el modelo subestimó.
 -   Residual negativo: el modelo sobreestimó.
 
-
 ## Sesgo por variable omitida
 
 <br>
@@ -206,7 +205,6 @@ $$
         incluido.
 -   Consecuencia: coeficientes sesgados e inferencias engañosas.
 
-
 ## Supuestos de OLS
 
 <br>
@@ -216,7 +214,6 @@ $$
 -   Independencia de errores.
 -   Homocedasticidad.
 -   Ausencia de colinealidad severa (en modelos múltiples).
-
 
 ## Regresión múltiple
 
@@ -258,7 +255,6 @@ m3 <- lm(mpg ~ wt + hp + cyl + am, data = mtcars)
 summary(m3)
 ```
 
-
 ## Sintaxis Básica en R
 
 <br>
@@ -277,36 +273,37 @@ m3 <- lm(mpg ~ wt + hp + cyl + am, data = mtcars)
 
 ```
 
-# Tablas con `easytable`
+# Regression Tables with `easytable`
 
-## Instalar `easytable`
+## Installing the `easytable` package
 
 <br>
 
+@easytable2026
+
 ```{r echo=TRUE, eval=FALSE}
-# Instalacion de un paquete de apoyo (dependencia)
-install.packages("devtools")
+# Install the package and its dependencies
+install.packages("easytable", 
+                 repos = c("https://alfredo-hs.r-universe.dev/easytable",
+                           "https://cloud.r-project.org"))
 
-# Instalacion de easytable
-devtools::install_github("alfredo-hs/easytable")
-
-# Activar easytable
+# Activate the package
 library(easytable) 
 ```
 
 ## `easytable()` vs `summary()`
 
+<br>
+
 ::::: columns
 ::: {.column width="50%"}
 ```{r echo=TRUE, eval=TRUE}
-# Activar la función summary() sobre el objecto m1
 summary(m1)
 ```
 :::
 
 ::: {.column width="50%"}
 ```{r echo=TRUE, eval=TRUE}
-# Activar la función easytable() sobre el objecto m1
 easytable(m1)
 ```
 :::
@@ -373,31 +370,53 @@ easytable(m1, m2, m3,
 :::
 :::::
 
-## Resumen
+## Workflow Summary
 
 <br>
 
 ```{r echo=TRUE, results='hide', eval=FALSE}
+# Install (Only Once!)
+install.packages("easytable", 
+                 repos = c("https://alfredo-hs.r-universe.dev/easytable",
+                           "https://cloud.r-project.org"))
+
+# Load the Library (Every Time!)
 library(easytable)
 
-# Modelos
+# Define the Models
 m1 <- lm(mpg ~ wt, data = mtcars)
 m2 <- lm(mpg ~ wt + hp, data = mtcars)
 m3 <- lm(mpg ~ wt + hp + cyl + am, data = mtcars)
 
-# Table
+# Make the Table
 easytable(m1, m2, m3,
-          control.var = c("cyl", "am"),
-          model.names = c("A", "B", "C"),
-          export.word = "tabla.docx",
-          export.csv = "tabla.csv",
+          export.word = "table.docx",
           highlight = TRUE)
 ```
 
+## Citation and Feedback
+
+<br>
+
+If you found this tool useful, please cite as:
+
+<br>
+
+```
+Hernandez Sanchez, A. (2026). easytable: Simple and Clean Regression Tables in R. Version 2.1.0. https://doi.org/10.5281/zenodo.18673550
+```
+
+<br>
+
+If you have any issues or suggestions please [email
+me](mailto:alhdzsz@gmail.com) or leave a comment on
+[GitHub](https://github.com/alfredo-hs/easytable/issues).
 
 # Thank you for your attention!
 
-#  {background-image="about_bg.svg" background-size="cover" background-position="center"}
+#  {background-image="img/about_bg.svg" background-size="cover" background-position="center"}
+
+<!-- #  {background-image="img/background.png" background-size="contain"} -->
 
 ```{=html}
 <script src="https://cdn.jsdelivr.net/npm/bsky-embed@0.0.5/dist/bsky-embed.es.js" async></script>
@@ -407,8 +426,7 @@ easytable(m1, m2, m3,
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 0;
-    transform: translateY(-30px);
+    margin-top: 20px;
   }
 
   .f-title {
@@ -436,10 +454,8 @@ easytable(m1, m2, m3,
     width: 40%;
     font-size: 0.7rem;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
   }
 
   .disclaimer-wrapper {
@@ -453,48 +469,30 @@ easytable(m1, m2, m3,
     line-height: 1.4;
     text-align: left;
   }
-
-  .bsky-follow-btn {
-    display: inline-block;
-    padding: 8px 14px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #ffffff;
-    background: #0e314e;
-    border: 1px solid #0e314e;
-    border-radius: 999px;
-    text-decoration: none;
-    letter-spacing: 0.2px;
-  }
-
-  .bsky-follow-btn:hover {
-    background: #2d8cff;
-    border-color: #2d8cff;
-    color: #ffffff;
-    text-decoration: none;
-  }
 </style>
 
 <div class="f-outer-container">
+  <div class="f-title">About the FIRSA Project</div> <br>
+
   <div class="bsky-disclaimer-container">
     <div class="bsky-section" id="firsa-eu.bsky-container">
       <bsky-embed  
-        username="alfredohs.com"  
+        username="firsa.eu"  
         limit="1"  
       ></bsky-embed>
-      <a class="bsky-follow-btn" href="https://bsky.app/profile/alfredohs.com" target="_blank" rel="noopener">Follow me on Bluesky</a>
     </div>
 
     <div class="disclaimer-wrapper">
       <div class="disclaimer-section">
-        <strong>About Me</strong>
+        <strong>Disclaimer:</strong>
         <br><br>
-        I am a computational social scientist examining how ideas and narratives shape political and financial systems. Alongside research, I have taught several courses on data science for social scientists and regularly share and review open-source tools.
+        This project has received funding from the European Union Marie Skłodowska-Curie Postdoctoral Fellowships / ERA Fellowships action under grant agreement No. 101180601 under the title: <em>Understanding FinTech Regulatory Sandbox Development in Europe</em> (FIRSA). 
         <br><br> 
-        For information more visit my <a href="https://alfredohs.com/" target="_blank">personal website</a>.
+        Learn more at the <a href="https://firsa.eu/" target="_blank">project website</a>.
         <br><br>
         <div style="text-align: center;">
-          <img src="small_logo.png" alt="Logo" style="max-width: 100px;">
+          <img src="img/small_firsa_transparent.png" alt="Logo" style="max-width: 100px; margin-right: 50px;">
+          <img src="img/eu_funded.png" alt="Logo" style="max-width: 120px;">
         </div>        
       </div>
     </div>
@@ -505,4 +503,3 @@ easytable(m1, m2, m3,
 ## References
 
 <br>
-

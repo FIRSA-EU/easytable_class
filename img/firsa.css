@@ -1,0 +1,24 @@
+/* styles.css */
+
+h1, h2, h3 {
+  color: #36648B !important;
+  font-family: "Garamond" !important;
+}
+
+strong, b {
+  color: #4682B4; /* Replace with your preferred hex color */
+}
+
+.reveal a {
+  color: #4682B4 !important;
+  text-decoration: underline;
+}
+
+.wrap-equation {
+  font-size: 60% !important;
+  background-color: #E8F3FB !important;
+  padding: .5em;
+  border-radius: 12px;
+  white-space: nowrap !important;
+  overflow-x: auto !important;
+}
