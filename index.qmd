@@ -1,333 +1,287 @@
 ---
-title: "Regression Tables in R"
-subtitle: "An example with `mtcars` and `easytable`"
-author:
-  - "[Alfredo Hernandez Sanchez, Ph.D.](https://alfredohs.com)"
-institute:
-  - "[Vilnius University](https://www.tspmi.vu.lt/en/)"
-date: "2026-04-23"
-abstract: >
-  Example materials for an undergraduate-level course on regression tables using the `easytable` R package.
-format:
+title: "Seminar on Interaction Effects with R"
+subtitle: "An example with `easytable`"
+author: 
+  - "Alfredo Hernandez Sanchez"
+institute: 
+  - "Vilnius University"
+date: 2026-04-30
+
+format: 
   revealjs:
+    logo: logo_pres.png
     theme: simple
-    logo: img/logo_pres.png
-    css: alhdzsz.css
-    transition: none
-bibliography: references.bib
-execute:
-  warning: false
-  message: false
-editor:
-  markdown:
+    css: firsa.css
+
+abstract: > 
+  Slides for an in-house training session at TSMPI Vilnius University
+  
+categories:
+- Talks
+editor: 
+  markdown: 
     wrap: 72
 ---
 
 ```{r}
-library(knitr)
-library(kableExtra)
-library(easytable)
-
-mtcars_tbl <- data.frame(
-  modelo = rownames(mtcars),
-  mtcars,
-  row.names = NULL,
-  check.names = FALSE
-)
-mtcars_tbl$transmision <- ifelse(mtcars_tbl$am == 1, "Manual", "Automática")
-
-mod_simple <- lm(mpg ~ wt, data = mtcars_tbl)
-mod_intermedio <- lm(mpg ~ wt + hp, data = mtcars_tbl)
-mod_multiple <- lm(mpg ~ wt + hp + cyl + am, data = mtcars_tbl)
-
-pred_simple <- mtcars_tbl
-pred_simple$y_hat <- predict(mod_simple)
-pred_simple$residuo <- resid(mod_simple)
-
-pred_multiple <- mtcars_tbl
-pred_multiple$y_hat_mult <- predict(mod_multiple)
-
-coef_tab <- function(modelo) {
-  s <- summary(modelo)
-  data.frame(
-    termino = rownames(s$coefficients),
-    estimado = s$coefficients[, 1],
-    error_std = s$coefficients[, 2],
-    t = s$coefficients[, 3],
-    p_valor = s$coefficients[, 4],
-    row.names = NULL,
-    check.names = FALSE
-  )
-}
-
-stats_tab <- function(modelo, etiqueta) {
-  s <- summary(modelo)
-  data.frame(
-    modelo = etiqueta,
-    observaciones = length(modelo$fitted.values),
-    r2 = s$r.squared,
-    r2_ajustado = s$adj.r.squared,
-    error_residual = s$sigma,
-    f = unname(s$fstatistic[1]),
-    gl1 = unname(s$fstatistic[2]),
-    gl2 = unname(s$fstatistic[3]),
-    aic = AIC(modelo),
-    row.names = NULL,
-    check.names = FALSE
-  )
-}
-
-render_kbl <- function(df, 
-                       digits = 2, 
-                       height = "500px", 
-                       font_size = 18, 
-                       caption = NULL) {
-  align_vec <- c("l", rep("r", max(0, ncol(df) - 1)))
-  kbl(
-    df,
-    format = "html",
-    digits = digits,
-    align = align_vec,
-    caption = caption
-  ) |>
-    kable_styling(
-      full_width = TRUE,
-      bootstrap_options = c("striped", "hover", "condensed"),
-      font_size = font_size
-    ) |>
-    scroll_box(width = "100%", height = height)
-}
-```
-
-## Objetivo de la sesión
-
--   Entender los componentes básicos de un modelo OLS.
--   Calcular e interpretar coefficientes $\beta$.
--   Entender por qué importan los controles (regresión múltiple).
--   Leer tablas de regresión con resultados reales en `mtcars`.
-
-## Datos de trabajo: `mtcars`
-
-> `mtcars` proviene de la revista Motor Trend (EE. UU., 1974) y contiene
-> información sobre el consumo de combustible y diez características de
-> diseño y desempeño de 32 automóviles de los modelos 1973–74. Tiene 32
-> observaciones y 11 variables numéricas, ampliamente utilizado en
-> análisis estadístico y ejemplos en R.
-
-<br>
-
-```{r}
-#| echo: true
 #| message: false
-#| results: 'hide'
 #| warning: false
+#| include: false
 
-data(mtcars)
+library(tidyverse)
+library(marginaleffects)
+library(easytable)
+df <- readRDS("output/synth_df.rds")
 ```
 
-## Variables `mtcars`
 
-<br>
+## When should we use interaction terms? 
 
-::: {style="font-size:50pt;"}
-| Variable | Descripción                              |
-|----------|------------------------------------------|
-| mpg      | Millas por galón (EE. UU.)               |
-| cyl      | Número de cilindros                      |
-| disp     | Cilindrada (pulgadas cúbicas)            |
-| hp       | Caballos de fuerza brutos                |
-| drat     | Relación del eje trasero                 |
-| wt       | Peso (miles de libras)                   |
-| qsec     | Tiempo en 1/4 de milla                   |
-| vs       | Motor (0 = en V, 1 = en línea)           |
-| am       | Transmisión (0 = automática, 1 = manual) |
-| gear     | Número de marchas hacia adelante         |
-| carb     | Número de carburadores                   |
+-   When the effect of a predictor variable $x_1$ on the response variable $\widehat{y}$ is **not independent** from *another predictor* $x_2$ 
+
+- For example, the interaction term tells us whether the relationship between $x_{1}$ and $\widehat{y}$ is different when $x_{2} = 1$ compared with when $x_{2} = 0$.
+
+
+## Multivariate OLS
+
+::: {.block}
+
+$$
+\widehat{y} = \beta_{0} + \beta_{1}x_{1} + \beta_{2}x_{2} + \epsilon
+$$
 :::
 
-## `mtcars`
+Where
 
-<br>
+- $\widehat{y}$ is the dependent variable
+- $\beta_{0}$ is the intercept
+- $x_{1}$ is an independent variable
+- $x_{2}$ is another independent variable
+- $\epsilon$ is the error term
 
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
 
-kbl(mtcars, digits = 1) %>% kable_styling(font_size = 25)
 
-```
+## Regression with interaction term
 
-## Regresión lineal simple
-
-$$
-mpg_i = \beta_0 + \beta_1 wt_i + \epsilon_i
-$$
-
--   Variable dependiente: `mpg`.
--   Variable independiente: `wt` (peso del auto).
--   Interpretación esperada: a mayor peso, menor rendimiento.
-
-## Resultados del modelo simple
-
-<br>
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-
-m1 <- lm(mpg ~ wt, 
-         data = mtcars)
-summary(m1)
-```
-
-## ¿Qué son los residuales?
-
-El residual es la diferencia entre el valor observado y el valor
-predicho por el modelo:
+::: {.block}
 
 $$
-e_i = y_i - \hat{y}_i
+\widehat{y} = \beta_{0} + \beta_{1}x_{1} + \beta_{2}x_{2} + \beta_{3}(x_{1} \times x_{2}) + \epsilon
 $$
+:::
 
--   Residual positivo: el modelo subestimó.
--   Residual negativo: el modelo sobreestimó.
+Where:
 
-## Sesgo por variable omitida
+- $\beta_{3}$ is the coefficient for the interaction between $x_{1}$ and $x_{2}$
+- the effect of $x_{1}$ on $\widehat{y}$ depends on the value of $x_{2}$
 
-<br>
 
--   Ocurre cuando excluimos una variable relevante para `mpg`.
--   Dos condiciones clásicas:
-    -   La variable omitida afecta `mpg`.
-    -   La variable omitida está correlacionada con un predictor
-        incluido.
--   Consecuencia: coeficientes sesgados e inferencias engañosas.
+## Interpreting the interaction terms
 
-## Supuestos de OLS
+Assume $x_{1}$ is continuous and $x_{2}$ is binary.
 
-<br>
-
--   Relación lineal entre predictores y variable dependiente.
--   Errores con media cero.
--   Independencia de errores.
--   Homocedasticidad.
--   Ausencia de colinealidad severa (en modelos múltiples).
-
-## Regresión múltiple
-
-<br>
+When $x_{2} = 0$:
 
 $$
-mpg_i = \beta_0 + \beta_1 wt_i + \beta_2 hp_i + \beta_3 cyl_i + \beta_4 am_i + \epsilon_i
+\widehat{y} = \beta_{0} + \beta_{1}x_{1}
 $$
 
--   Ahora controlamos simultáneamente por potencia, cilindros y
-    transmisión.
--   Cada coeficiente se interpreta **ceteris paribus**.
+When $x_{2} = 1$:
 
-## Interpretación de coeficientes
+$$
+\widehat{y} = (\beta_{0} + \beta_{2}) + (\beta_{1} + \beta_{3})x_{1}
+$$
 
-<br>
+::: {.block}
 
-Con el modelo múltiple:
+$\beta_{2}$ is the change in the **intercept** when $x_{2} = 1$.
 
--   Efecto de `wt`: `r round(coef(mod_multiple)["wt"], 3)` unidades de
-    `mpg` por cada unidad adicional de peso, manteniendo lo demás
-    constante.
--   Efecto de `hp`: `r round(coef(mod_multiple)["hp"], 3)` sobre `mpg`,
-    ceteris paribus.
--   Efecto de `am` (manual=1): `r round(coef(mod_multiple)["am"], 3)`
-    frente a automática.
+$\beta_{3}$ is the change in the **slope** of $x_{1}$ when $x_{2} = 1$.
+:::
 
-## Resultados del modelo múltiple
-
-<br>
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-
-m3 <- lm(mpg ~ wt + hp + cyl + am, data = mtcars)
-
-summary(m3)
-```
-
-## Sintaxis Básica en R
-
-<br>
-
-```{r echo=TRUE, eval=TRUE}
-
-# Modelo simple
-m1 <- lm(mpg ~ wt, 
-         data = mtcars)
-
-# Modelo múltiple 
-m2 <- lm(mpg ~ wt + hp, data = mtcars)
-
-# Modelo múltiple 
-m3 <- lm(mpg ~ wt + hp + cyl + am, data = mtcars)
-
-```
-
-# Regression Tables with `easytable`
-
-## Installing the `easytable` package
-
-<br>
-
-@easytable2026
-
-```{r echo=TRUE, eval=FALSE}
-# Install the package and its dependencies
-install.packages("easytable", 
-                 repos = c("https://alfredo-hs.r-universe.dev/easytable",
-                           "https://cloud.r-project.org"))
-
-# Activate the package
-library(easytable) 
-```
-
-## `easytable()` vs `summary()`
+## Binary Interaction Results
 
 <br>
 
 ::::: columns
+::: {.column width="30%"}
+```{r echo=FALSE, eval=TRUE}
+model_dem <- lm(gdp_growth ~ aid_pct * 
+                  democracy, data = df)
+easytable(model_dem)
+```
+:::
+
+::: {.column width="70%"}
+```{r echo=FALSE, eval=TRUE}
+plot_predictions(
+  model_dem,
+  condition = c("aid_pct", "democracy")
+) +
+  labs(
+    title = "Interaction between aid and democracy",
+    subtitle = "Synthetic data",
+    x = "Foreign aid as % of national income",
+    y = "Predicted GDP growth"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "top")
+```
+:::
+:::::
+
+## Example of an interaction
+
+::: {style="font-size: 0.75em;"}
+Suppose we want to study whether foreign aid is associated with economic growth (*RQ*). But we suspect that aid does not work the same way everywhere. 
+
+- *H*: *Aid may be more useful when the state has stronger administrative capacity.*
+
+$$
+\widehat{Growth} =
+1.37 + 0.35 Aid + 0.52 Capacity + 0.20(Aid \times Capacity)
+$$
+
+Where
+
+- $Growth$ is annual GDP growth
+- $Aid$ is foreign aid as a percentage of national income
+- $Capacity$ is a state capacity index (median centered)
+- $Aid \times Capacity$ is the interaction term
+
+:::
+
+## Interpretation
+
+The effect of aid is **not** *just* $0.35$.
+
+Because aid is **interacted** with state capacity, the effect of aid is:
+
+$$
+\frac{\partial \widehat{Growth}}{\partial Aid}
+=
+0.35 + 0.20 Capacity
+$$
+
+::: {.block}
+
+For every one-point increase in state capacity, the association between aid and predicted GDP growth becomes **0.2 percentage points stronger**.
+:::
+
+## Results
+
+<br>
+
+::::: columns
+::: {.column width="30%"}
+```{r echo=FALSE, eval=TRUE}
+model_cap <- lm(gdp_growth ~ aid_pct * 
+                  state_capacity, data = df)
+easytable(model_cap)
+```
+:::
+
+::: {.column width="70%"}
+```{r echo=FALSE, eval=TRUE}
+plot_predictions(
+  model_cap,
+  condition = c("aid_pct", "state_capacity")
+) +
+  labs(
+    title = "Interaction between aid and state capacity",
+    subtitle = "Synthetic data",
+    x = "Foreign aid as % of national income",
+    y = "Predicted GDP growth"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "top")
+```
+:::
+:::::
+
+## Interaction Terms in R
+
+<br>
+
+::::: columns
+::: {.column width="70%"}
+```{r echo=TRUE, eval=TRUE}
+
+#  OLS
+m1 <- lm(gdp_growth ~ aid_pct + state_capacity, 
+         data = df)
+
+# Interaction 
+m2 <- lm(gdp_growth ~ aid_pct * state_capacity, 
+         data = df)
+
+
+# Multiple Interactions
+m3 <- lm(gdp_growth ~ 
+           aid_pct * state_capacity + 
+           aid_pct * democracy + 
+           population_m, 
+         data = df)
+
+```
+:::
+
+::: {.column width="30%"}
+```{r echo=FALSE, eval=TRUE}
+easytable(m1,m2,m3, highlight = T)
+```
+:::
+:::::
+
+# Reporting regression results with `easytable`
+
+## Install `easytable`
+
+<br>
+
+```{r echo=TRUE, eval=FALSE}
+# Install the package from R-Universe
+install.packages("easytable", 
+                 repos = c("https://alfredo-hs.r-universe.dev/easytable",
+                           "https://cloud.r-project.org"))
+
+# Load the library
+library(easytable)
+```
+
+## `easytable()` vs `summary()`
+
+::::: columns
 ::: {.column width="50%"}
 ```{r echo=TRUE, eval=TRUE}
+# Call summary() on object m1
 summary(m1)
 ```
 :::
 
 ::: {.column width="50%"}
 ```{r echo=TRUE, eval=TRUE}
+# Call easytable() on object m1
 easytable(m1)
 ```
 :::
 :::::
 
-## Comparar modelos con `easytable()`
+## Comparing models with `easytable()`
 
 <br>
 
 ```{r echo=TRUE, eval=TRUE}
-# Activar la función easytable() sobre los objectos m1 y m2
+# Activate easytable() on objects m1 y m2
 easytable(m1, m2)
 ```
 
-## Otras funciones de `easytable()`
-
-[![](img/troubleshooteasytable.png){width="775"}](https://alfredo-hs.github.io/easytable/articles/penguins-tutorial.html)
-
-## Otras funciones de `easytable()`
+## Other `easytable()` commands
 
 ::::: columns
 ::: {.column width="50%"}
 ```{r echo=TRUE, eval=TRUE}
-# Resaltar coeficientes significativos
+# Highlight significant coefficients
 easytable(m1, m2, m3,
           highlight = TRUE)
 ```
@@ -335,88 +289,84 @@ easytable(m1, m2, m3,
 
 ::: {.column width="50%"}
 ```{r echo=TRUE, eval=TRUE}
-# Nombrar modelos
-easytable(m1, m2, m3,
-          model.names = c("A", "B", "C"),
+# Name models, set digits
+easytable(m1, m2,
+          digits = 1,
+          model.names = c("A", "B"),
           highlight = TRUE)
 ```
 :::
 :::::
 
-## Exportar a word
+## Export and set control variables
 
 <br>
 
 ::::: columns
 ::: {.column width="50%"}
 ```{r echo=TRUE, eval=TRUE}
-# Variables de control
+# Define control variables
 easytable(m1, m2, m3,
-          control.var = c("cyl", "am"),
+          control.var = c("population_m"),
           highlight = TRUE)
 ```
 :::
 
 ::: {.column width="50%"}
 ```{r echo=TRUE, results='hide', eval=TRUE}
-# Exportar a word y csv
+# Export to word and csv
 easytable(m1, m2, m3,
           control.var = c("cyl", "am"),
           model.names = c("A", "B", "C"),
-          export.word = "tabla.docx",
-          export.csv = "tabla.csv",
+          export.word = "table.docx",
+          export.csv = "table.csv",
           highlight = TRUE)
 ```
 :::
 :::::
 
-## Workflow Summary
+## Summary
 
 <br>
 
 ```{r echo=TRUE, results='hide', eval=FALSE}
-# Install (Only Once!)
-install.packages("easytable", 
-                 repos = c("https://alfredo-hs.r-universe.dev/easytable",
-                           "https://cloud.r-project.org"))
-
-# Load the Library (Every Time!)
 library(easytable)
+mtcars
 
-# Define the Models
+# Define models
 m1 <- lm(mpg ~ wt, data = mtcars)
 m2 <- lm(mpg ~ wt + hp, data = mtcars)
 m3 <- lm(mpg ~ wt + hp + cyl + am, data = mtcars)
 
-# Make the Table
+# Table
 easytable(m1, m2, m3,
+          control.var = c("cyl", "am"),
+          model.names = c("A", "B", "C"),
           export.word = "table.docx",
+          export.csv = "table.csv",
           highlight = TRUE)
 ```
 
-## Citation and Feedback
+## Activity
 
-<br>
+::: {style="font-size: 0.72em;"}
 
-If you found this tool useful, please cite as:
+Work in pairs or groups of 3.
 
-<br>
+Your task is to use the `gapminder` data to test one interaction effect.
 
-```
-Hernandez Sanchez, A. (2026). easytable: Simple and Clean Regression Tables in R. Version 2.1.0. https://doi.org/10.5281/zenodo.18673550
-```
-
-<br>
-
-If you have any issues or suggestions please [email
-me](mailto:alhdzsz@gmail.com) or leave a comment on
-[GitHub](https://github.com/alfredo-hs/easytable/issues).
+- Choose an outcome variable, such as `lifeExp`
+- Choose one main explanatory variable, such as `log_gdp`
+- Choose a second variable that may change the relationship, such as `continent`, `pop`, or a *dummy* variable (binary) you create
+- Write one simple hypothesis
+- Write one short mechanism explaining why the interaction might exist
+- Estimate a regression model with an interaction term
+- Interpret the interaction coefficient in plain English
+:::
 
 # Thank you for your attention!
 
-#  {background-image="img/about_bg.svg" background-size="cover" background-position="center"}
-
-<!-- #  {background-image="img/background.png" background-size="contain"} -->
+#  {background-image="background.png" background-size="contain"}
 
 ```{=html}
 <script src="https://cdn.jsdelivr.net/npm/bsky-embed@0.0.5/dist/bsky-embed.es.js" async></script>
@@ -491,8 +441,7 @@ me](mailto:alhdzsz@gmail.com) or leave a comment on
         Learn more at the <a href="https://firsa.eu/" target="_blank">project website</a>.
         <br><br>
         <div style="text-align: center;">
-          <img src="img/small_firsa_transparent.png" alt="Logo" style="max-width: 100px; margin-right: 50px;">
-          <img src="img/eu_funded.png" alt="Logo" style="max-width: 120px;">
+          <img src="small_firsa_transparent.png" alt="Logo" style="max-width: 100px;">
         </div>        
       </div>
     </div>
@@ -500,6 +449,3 @@ me](mailto:alhdzsz@gmail.com) or leave a comment on
 </div>
 ```
 
-## References
-
-<br>
